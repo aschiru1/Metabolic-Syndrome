@@ -1,0 +1,757 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+                                                #Hypothesis
+Ho: There is no significant association between demographic and health factors with metabolic syndrome.
+Ha: There is a significant association between demographic and health factors with metabolic syndrome.
+```{r}
+library(dplyr)
+library(ggplot2)
+  
+```
+
+```{r}
+df<-read.csv('C:/Users/ashac/OneDrive - Indiana University/Third Semester/Security and Privacy/Second Semester/Applied Statistics/Metabolic Syndrome.csv')
+df
+```
+
+```{r}
+#Checking the missing values
+col_missing <- colSums(is.na(df))
+col_missing
+```
+
+```{r}
+#Dropping Un-necessary columns
+Metabolic_Syndrome<-select(df, -c(WaistCirc, Albuminuria, UrAlbCr, Marital, Triglycerides, Income))
+head(Metabolic_Syndrome)
+summary(Metabolic_Syndrome)
+```
+
+```{r}
+#PREPROCESSING (Only BMI has 26 null values)
+Metabolic_Syndrome <- Metabolic_Syndrome[!is.na(Metabolic_Syndrome$BMI), ]
+summary(Metabolic_Syndrome)
+#COUNT OF NUMBER OF ROWS
+nrow(Metabolic_Syndrome)
+
+```
+
+```{r}
+#TYPE OF DATA
+str(Metabolic_Syndrome)
+```
+
+
+                                         
+```{r}
+# Assuming 'Metabolic_Syndrome' is the name of your dataset
+
+# Boxplot for Age
+boxplot(Metabolic_Syndrome$Age,
+        main = "Boxplot of Age",
+        ylab = "Age",
+        col = "lightblue",
+        border = "black"
+)
+
+# Boxplot for Blood Glucose Level
+boxplot(Metabolic_Syndrome$BloodGlucose,
+        main = "Boxplot of Blood Glucose",
+        ylab = "Blood Glucose ",
+        col = "lightgreen",
+        border = "black"
+)
+
+# Boxplot for BMI
+boxplot(Metabolic_Syndrome$BMI,
+        main = "Boxplot of BMI",
+        ylab = "BMI",
+        col = "lightpink",
+        border = "black"
+)
+
+boxplot(Metabolic_Syndrome$HDL,
+        main = "Boxplot of HDL",
+        ylab = "HDL",
+        col = "yellow",
+        border = "black"
+)
+boxplot(Metabolic_Syndrome$UricAcid,
+        main = "Boxplot of UricAcid",
+        ylab = "Uric Acid ",
+        col = "purple",
+        border ="black")
+```
+```{r}
+# Counting the number of outliers
+count_outliers <- function(data, column_name) {
+  # Calculate the first and third quartiles
+  q1 <- quantile(data[[column_name]], 0.25)
+  q3 <- quantile(data[[column_name]], 0.75)
+  
+  # Calculate the interquartile range (IQR)
+  iqr <- q3 - q1
+  
+  # Define the lower and upper bounds for outliers
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  
+  # Identify outliers
+  outliers <- data[[column_name]] < lower_bound | data[[column_name]] > upper_bound
+  
+  # Count the number of outliers
+  num_outliers <- sum(outliers)
+  
+  # Return the count of outliers
+  return(num_outliers)
+}
+
+
+# Count outliers for BMI
+num_outliers_bmi <- count_outliers(Metabolic_Syndrome, "BMI")
+cat("Number of outliers for BMI:", num_outliers_bmi, "\n")
+
+# Count outliers for Blood Glucose Level
+num_outliers_bg <- count_outliers(Metabolic_Syndrome, "BloodGlucose")
+cat("Number of outliers for Blood Glucose Level:", num_outliers_bg, "\n")
+
+num_outliers_hdl <- count_outliers(Metabolic_Syndrome, "HDL")
+cat("Number of outliers for HDL:", num_outliers_hdl, "\n")
+
+num_outliers_bg <- count_outliers(Metabolic_Syndrome, "UricAcid")
+cat("Number of outliers for UricAcid:", num_outliers_bg, "\n")
+
+```
+
+
+```{r}
+#Capping outliers for required columns.
+# Function to cap outliers for specified columns
+cap_outliers <- function(data, columns) {
+  for (col in columns) {
+    # Calculate the first and third quartiles
+    q1 <- quantile(data[[col]], 0.25)
+    q3 <- quantile(data[[col]], 0.75)
+  
+    # Calculate the interquartile range (IQR)
+    iqr <- q3 - q1
+  
+    # Define the lower and upper bounds for outliers
+    lower_bound <- q1 - 1.5 * iqr
+    upper_bound <- q3 + 1.5 * iqr
+  
+    # Cap outliers
+    data[[col]][data[[col]] < lower_bound] <- lower_bound
+    data[[col]][data[[col]] > upper_bound] <- upper_bound
+  }
+  
+  # Return the updated dataset
+  return(data)
+}
+
+# Columns to cap outliers for (e.g., "BMI" and "BloodGlucoseLevel")
+columns <- c("BMI", "BloodGlucose", "HDL", "UricAcid")
+
+# Cap outliers for specified columns
+Metabolic_Syndrome_final <- cap_outliers(Metabolic_Syndrome, columns)
+
+# View the updated dataset
+head(Metabolic_Syndrome_final)
+
+```
+```{r}
+#boxplot after capping
+boxplot(Metabolic_Syndrome_final$BMI,
+        main = "Boxplot of BMI",
+        ylab = "BMI",
+        col = "lightgreen",
+        border = "black"
+)
+boxplot(Metabolic_Syndrome_final$BloodGlucose,
+        main = "Boxplot of BloodGlucose",
+        ylab = "BloodGlucose",
+        col = "lightpink",
+        border = "black"
+)
+boxplot(Metabolic_Syndrome_final$HDL,
+        main = "Boxplot of HDL",
+        ylab = "HDL",
+        col = "yellow",
+        border = "black"
+)
+boxplot(Metabolic_Syndrome_final$UricAcid,
+        main = "Boxplot of UricAcid",
+        ylab = "Uric Acid ",
+        col = "purple",
+        border ="black")
+```
+
+```{r}
+#contigency table for categorical variables
+addmargins(table(Sex = Metabolic_Syndrome_final$Sex , Metabolicsyndrome= Metabolic_Syndrome_final$MetabolicSyndrome))
+```
+```{r}
+addmargins(table(Race = Metabolic_Syndrome_final$Race , Metabolicsyndrome= Metabolic_Syndrome_final$MetabolicSyndrome))
+```
+#Visualisations
+
+```{r}
+#Distribution of Age
+library(ggplot2)
+ggplot(data = Metabolic_Syndrome_final, aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Age", x = "Age", y = "Frequency")
+```
+```{r}
+library(ggplot2)
+
+# Define the intervals or values you want to display on the x-axis
+custom_breaks <- c(80, 85, 90, 95, 100, 105, 110, 115, 120)
+
+# Create a ggplot bar plot with custom x-axis breaks and space between intervals
+ggplot(data = Metabolic_Syndrome_final, aes(x = factor(BloodGlucose))) +
+  geom_bar(fill = "lightcoral") +
+  labs(title = "Distribution of Blood Glucose Levels", x = "Blood Glucose Level", y = "Count") +
+  scale_x_discrete(breaks = custom_breaks) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+```
+
+```{r}
+ggplot(data = Metabolic_Syndrome_final, aes(x = factor(MetabolicSyndrome), y = HDL, fill = factor(MetabolicSyndrome))) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Distribution of HDL by Metabolic Syndrome", x = "Metabolic Syndrome", y = "HDL") +
+  scale_fill_manual(values = c("0" = "lightblue", "1" = "lightgreen")) +
+  theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+
+sex_counts <- table(Metabolic_Syndrome_final$Sex)
+sex_data <- data.frame(Sex = names(sex_counts), Count = as.numeric(sex_counts))
+
+ggplot(data = sex_data, aes(x = "", y = Count, fill = Sex)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  labs(title = "Distribution by Sex", fill = "Sex") +
+  theme_void() +
+  scale_fill_manual(values = c("Female" = "pink", "Male" = "skyblue"))
+```
+```{r}
+ggplot(data = Metabolic_Syndrome_final, aes(x = Race, fill = factor(MetabolicSyndrome))) +
+  geom_bar(position = "dodge", width = 0.7) +
+  labs(title = "Distribution of Metabolic Syndrome by Race", x = "Race", y = "Count") +
+  scale_fill_manual(values = c("0" = "lightblue", "1" = "lightgreen"), name = "Metabolic Syndrome") +
+  theme_minimal()
+```
+
+
+```{r}
+# Box plot for BMI vs Metabolic Syndrome
+ggplot(data = df, aes(x = factor(MetabolicSyndrome), y = BMI, fill = factor(MetabolicSyndrome))) +
+  geom_boxplot() +
+  labs(title = "Distribution of BMI with Metabolic Syndrome",
+       x = "Metabolic Syndrome", y = "BMI", fill = "Metabolic Syndrome") +
+  scale_fill_manual(values = c("lightblue", "lightcoral"), labels = c("No", "Yes")) +
+  theme_minimal()
+```
+
+```{r}
+# Scatter plot for Age vs HDL with Metabolic Syndrome
+ggplot(data = df, aes(x = Age, y = HDL, color = factor(MetabolicSyndrome))) +
+  geom_point() +
+  labs(title = "Relationship between Age, HDL Levels, and Metabolic Syndrome",
+       x = "Age", y = "HDL Level", color = "Metabolic Syndrome") +
+  scale_color_manual(values = c("blue", "red"), labels = c("No", "Yes")) +
+  theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+
+# Create a density plot for the 'UricAcid' variable
+ggplot(data = df, aes(x = UricAcid, y = ..density..)) +
+  geom_density(fill = "lightblue", color = "black") +
+  labs(title = "Distribution of Uric Acid Levels", x = "Uric Acid Level", y = "Density") +
+  theme_minimal()
+```
+
+```{r}
+# Box plot for Uric Acid vs Metabolic Syndrome
+ggplot(data = df, aes(x = factor(MetabolicSyndrome), y = UricAcid, fill = factor(MetabolicSyndrome))) +
+  geom_boxplot() +
+  labs(title = "Distribution of Uric Acid with Metabolic Syndrome",
+       x = "Metabolic Syndrome", y = "Uric Acid", fill = "Metabolic Syndrome") +
+  scale_fill_manual(values = c("lightblue", "lightcoral"), labels = c("No", "Yes")) +
+  theme_minimal()
+```
+
+```{r}
+# Stacked bar plot for Race vs Metabolic Syndrome
+ggplot(data = df, aes(x = Race, fill = factor(MetabolicSyndrome))) +
+  geom_bar(position = "stack") +
+  labs(title = "Race vs Metabolic Syndrome",
+       x = "Race", y = "Count", fill = "Metabolic Syndrome") +
+  scale_fill_manual(values = c("lightblue", "lightcoral"), labels = c("No", "Yes")) +
+  theme_minimal()
+```
+
+
+```{r}
+# Histogram with density overlay for Blood Glucose Levels and Metabolic Syndrome
+ggplot(data = df, aes(x = BloodGlucose, fill = factor(MetabolicSyndrome), color = factor(MetabolicSyndrome))) +
+  geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.5) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Distribution of Blood Glucose Levels by Metabolic Syndrome",
+       x = "Blood Glucose Level", y = "Density", fill = "Metabolic Syndrome", color = "Metabolic Syndrome") +
+  scale_fill_manual(values = c("lightblue", "lightcoral"), labels = c("No", "Yes")) +
+  scale_color_manual(values = c("lightblue", "lightcoral"), labels = c("No", "Yes")) +
+  theme_minimal()
+```
+
+
+#STATISTICAL ANALYSIS
+#Exploratory data Analysis
+
+```{r}
+summary(Metabolic_Syndrome_final)
+```
+
+
+#Checking Normality of data
+
+```{r}
+numeric_columns = Metabolic_Syndrome_final[sapply(Metabolic_Syndrome_final,is.numeric)]
+normality_results = sapply(numeric_columns,function(x) {
+  shapiro.test = shapiro.test(x) 
+  p_value = shapiro.test$p.value
+})
+normality_results
+```
+
+The data is not normally distributed.
+
+#DENSITY PLOTS
+
+```{r}
+library(ggplot2)
+
+# Convert MetabolicSyndrome to a factor if it's not already
+Metabolic_Syndrome_final$MetabolicSyndrome <- factor(Metabolic_Syndrome_final$MetabolicSyndrome)
+
+# Define color palette for each variable
+color_palette <- c("Age" = "blue", "BMI" = "darkgreen", "Blood Glucose" = "red","HDL" = "brown", "UricAcid" = "purple")
+
+# Create the plot
+ggplot(data = Metabolic_Syndrome_final) +
+  geom_density(aes(x = Age, color = "Age"), alpha = 0.6) +
+  geom_density(aes(x = BMI, color = "BMI"), alpha = 0.6) +
+  geom_density(aes(x = HDL, color = "HDL"), alpha = 0.6) +
+  geom_density(aes(x = UricAcid, color = "UricAcid"), alpha = 0.6) +
+  geom_density(aes(x = BloodGlucose, color = "Blood Glucose"), alpha = 0.6) +
+  facet_wrap(~ Sex) +  # Facet by Sex
+  scale_color_manual(values = color_palette, name = "Variables", labels = c("Age", "BMI", "Blood Glucose" , "HDL", "UricAcid")) +
+  labs(title = "Density plots of Metabolic Syndrome by Age, BMI, and Blood Glucose , HDL, UricAcid", 
+       x = "Variables", y = "Density") +
+  theme_bw() +  # Change plot background to white
+  theme(panel.grid = element_blank())  # Remove grid lines
+```
+
+
+
+
+FOR RQ1
+
+
+#chi-square test
+
+```{r}
+# Create a contingency table of Sex and Metabolic Syndrome
+contingency_table <- table(Metabolic_Syndrome_final$Sex, Metabolic_Syndrome_final$MetabolicSyndrome)
+
+# Perform chi-square test
+chi_square_result <- chisq.test(contingency_table)
+
+# Print the results
+print(chi_square_result)
+
+# Check for significance and provide interpretation
+if (chi_square_result$p.value < 0.05) {
+  cat("\nThere is a significant association between Sex and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between Sex and Metabolic Syndrome.\n")
+}
+```
+
+```{r}
+# Create a contingency table of Race and Metabolic Syndrome
+contingency_table_race <- table(Metabolic_Syndrome_final$Race, Metabolic_Syndrome_final$MetabolicSyndrome)
+
+# Perform chi-square test for Race
+chi_square_result_race <- chisq.test(contingency_table_race)
+
+# Print the results for Race
+print(chi_square_result_race)
+
+# Check for significance and provide interpretation
+if (chi_square_result_race$p.value < 0.05) {
+  cat("\nThere is a significant association between Race and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between Race and Metabolic Syndrome.\n")
+}
+```
+
+#Kruskal-Wallis test
+
+```{r}
+# Perform Kruskal-Wallis test for Age
+kruskal_test_age <- kruskal.test(Age ~ MetabolicSyndrome, data = Metabolic_Syndrome_final)
+
+# Print the results for Age
+print(kruskal_test_age)
+
+# Check for significance and provide interpretation
+if (kruskal_test_age$p.value < 0.05) {
+  cat("\nThere is a significant association between Age and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between Age and Metabolic Syndrome.\n")
+}
+```
+
+```{r}
+# Perform Kruskal-Wallis test for BMI
+kruskal_test_bmi <- kruskal.test(BMI ~ MetabolicSyndrome, data = Metabolic_Syndrome_final)
+
+# Print the results for BMI
+print(kruskal_test_bmi)
+
+# Check for significance and provide interpretation
+if (kruskal_test_bmi$p.value < 0.05) {
+  cat("\nThere is a significant association between BMI and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between BMI and Metabolic Syndrome.\n")
+}
+```
+
+
+```{r}
+# Perform Kruskal-Wallis test for Blood Glucose
+kruskal_test_glucose <- kruskal.test(BloodGlucose ~ MetabolicSyndrome, data = Metabolic_Syndrome_final)
+
+# Print the results for Blood Glucose
+print(kruskal_test_glucose)
+
+# Check for significance and provide interpretation
+if (kruskal_test_glucose$p.value < 0.05) {
+  cat("\nThere is a significant association between Blood Glucose and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between Blood Glucose and Metabolic Syndrome.\n")
+}
+```
+```{r}
+# Perform Kruskal-Wallis test for HDL
+kruskal_test_HDL <- kruskal.test(HDL ~ MetabolicSyndrome, data = Metabolic_Syndrome_final)
+
+# Print the results for Blood Glucose
+print(kruskal_test_HDL)
+
+# Check for significance and provide interpretation
+if (kruskal_test_HDL$p.value < 0.05) {
+  cat("\nThere is a significant association between HDL and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between HDL and Metabolic Syndrome.\n")
+}
+```
+
+```{r}
+# Perform Kruskal-Wallis test for UricAcid
+kruskal_test_UricAcid <- kruskal.test(UricAcid ~ MetabolicSyndrome, data = Metabolic_Syndrome_final)
+
+# Print the results for Blood Glucose
+print(kruskal_test_UricAcid)
+
+# Check for significance and provide interpretation
+if (kruskal_test_UricAcid$p.value < 0.05) {
+  cat("\nThere is a significant association between HDL and Metabolic Syndrome.\n")
+} else {
+  cat("\nThere is no significant association between HDL and Metabolic Syndrome.\n")
+}
+```
+
+
+
+
+
+#```{r}install.packages("reshape2")
+```
+
+
+
+#correlation
+
+```{r}
+library(ggplot2)
+library(reshape2)
+numerical_data <- Metabolic_Syndrome_final[, c("Age", "BMI", "BloodGlucose","HDL","UricAcid")]
+
+correlation_matrix <- cor(numerical_data)
+melted_correlation <- melt(correlation_matrix, value.name = "Correlation")
+
+ggplot(data = melted_correlation, aes(Var1, Var2, fill = Correlation)) + 
+  geom_tile() + 
+  geom_text(aes(label = round(Correlation, 2)), color = "black", size = 3) + 
+  scale_fill_gradient(low = "#4E79A7", high = "skyblue") + 
+  labs(title = "Correlation HeatMap", x = "", y = "") + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+```
+
+
+#logistic regression
+
+```{r}
+# Fit logistic regression model for Age
+logistic_model_age <- glm(MetabolicSyndrome ~ Age, data = Metabolic_Syndrome_final, family = binomial)
+
+# Summary of the model for Age
+summary(logistic_model_age)
+
+# Extract odds ratio for Age
+odds_ratio_age <- exp(coef(logistic_model_age)["Age"])
+
+# Print the odds ratio with interpretation for Age
+cat("Odds Ratio for Age:", odds_ratio_age, "\n")
+
+# Interpretation for Age
+cat("For every one year increase in age, the odds of having metabolic syndrome increase by a factor of", round(odds_ratio_age, 2), "times, holding all other variables constant.\n")
+```
+
+
+```{r}
+# Fit logistic regression model
+logistic_model <- glm(MetabolicSyndrome ~ BMI, data = Metabolic_Syndrome_final, family = binomial)
+
+# Summary of the model
+summary(logistic_model)
+
+# Extract odds ratio
+odds_ratio <- exp(coef(logistic_model)["BMI"])
+
+# Print the odds ratio with interpretation
+cat("Odds Ratio for BMI:", odds_ratio, "\n")
+
+# Interpretation
+cat("For every one unit increase in BMI, the odds of having metabolic syndrome increase by a factor of", round(odds_ratio, 2), "times, holding all other variables constant.")
+```
+
+```{r}
+# Fit logistic regression model for Blood Glucose
+logistic_model_glucose <- glm(MetabolicSyndrome ~ BloodGlucose, data = Metabolic_Syndrome_final, family = binomial)
+
+# Summary of the model for Blood Glucose
+summary(logistic_model_glucose)
+
+# Extract odds ratio for Blood Glucose
+odds_ratio_glucose <- exp(coef(logistic_model_glucose)["BloodGlucose"])
+
+# Print the odds ratio with interpretation for Blood Glucose
+cat("Odds Ratio for Blood Glucose:", odds_ratio_glucose, "\n")
+
+# Interpretation for Blood Glucose
+cat("For every one unit increase in blood glucose level, the odds of having metabolic syndrome increase by a factor of", round(odds_ratio_glucose, 2), "times, holding all other variables constant.\n")
+```
+
+```{r}
+# Fit logistic regression model for HDL
+logistic_model_HDL <- glm(MetabolicSyndrome ~ HDL, data = Metabolic_Syndrome_final, family = binomial)
+
+# Summary of the model for HDL
+summary(logistic_model_HDL)
+
+# Extract odds ratio for HDL
+odds_ratio_HDL <- exp(coef(logistic_model_HDL)["HDL"])
+
+# Print the odds ratio with interpretation for HDL
+cat("Odds Ratio for HDL:", odds_ratio_HDL, "\n")
+
+# Interpretation for HDL
+cat("For every one unit increase in HDL, the odds of having metabolic syndrome increase by a factor of", round(odds_ratio_HDL, 2), "times, holding all other variables constant.\n")
+```
+
+```{r}
+# Fit logistic regression model for UricAcid
+logistic_model_UricAcid <- glm(MetabolicSyndrome ~ HDL, data = Metabolic_Syndrome_final, family = binomial)
+
+# Summary of the model for UricAcid
+summary(logistic_model_UricAcid)
+
+# Extract odds ratio for HDL
+odds_ratio_UricAcid <- exp(coef(logistic_model_UricAcid)["UricAcid"])
+
+# Print the odds ratio with interpretation for UricAcid
+cat("Odds Ratio for UricAcid:", odds_ratio_UricAcid, "\n")
+
+# Interpretation for UricAcid
+cat("For every one unit increase in UricAcid, the odds of having metabolic syndrome increase by a factor of", round(odds_ratio_UricAcid, 2), "times, holding all other variables constant.\n")
+```
+
+
+
+
+FOR RQ2:
+
+Which demographic or health factor has the highest impact on the prevalence of metabolic syndrome among individuals with certain risk factors?
+
+Null Hypothesis (H0): There is no significant difference in the prevalence of metabolic syndrome among individuals with certain risk factors based on demographic or health factors.
+Alternate Hypothesis (H1): At least one demographic or health factor has a significant impact on the prevalence of metabolic syndrome among individuals with certain risk factors.
+
+```{r}
+# Load necessary libraries
+library(dplyr)   # For data manipulation
+library(tidyr)   # For data tidying
+library(broom)   # For tidying model results
+
+
+
+# Select relevant variables for analysis
+#variables <- c("BMI", "UricAcid", "BloodGlucose", "HDL")
+variables1 <- c("Age", "Sex","Race")
+
+# Define outcome variable
+outcome_var1 <- "MetabolicSyndrome"
+
+# Fit logistic regression model
+logit_model1 <- glm(as.formula(paste(outcome_var1, "~", paste(variables1, collapse = " + "))),
+                   data = Metabolic_Syndrome_final,
+                   family = binomial)
+
+# Tidy up the model results
+tidy_results1 <- tidy(logit_model1)
+
+# Print coefficient estimates
+print(tidy_results1)
+
+# Visualize coefficient estimates
+plot(tidy_results1, main = "Coefficient Estimates")
+
+# Check statistical significance of coefficients
+summary(logit_model1)
+
+```
+
+
+
+```{r}
+# Assuming you have already fitted a logistic regression model named logit_model
+
+# Get summary of the model
+summary_logit <- summary(logit_model1)
+
+# Extract coefficient estimates and p-values
+coefficients <- coef(logit_model1)
+p_values <- summary_logit$coefficients[, 4]
+
+# Exclude intercept (if present)
+if ("(Intercept)" %in% names(coefficients)) {
+  coefficients <- coefficients[-1]
+  p_values <- p_values[-1]
+}
+
+# Calculate absolute coefficients
+abs_coefficients <- abs(coefficients)
+
+# Find the index of the variable with the highest absolute coefficient
+highest_impact_index <- which.max(abs_coefficients)
+
+# Print the variable with the highest impact and its coefficient
+cat("Variable with the highest impact: ", names(coefficients)[highest_impact_index], "\n")
+cat("Coefficient estimate: ", coefficients[highest_impact_index], "\n")
+cat("P-value: ", p_values[highest_impact_index], "\n")
+```
+
+
+```{r}
+# Load necessary libraries
+library(dplyr)   # For data manipulation
+library(tidyr)   # For data tidying
+library(broom)   # For tidying model results
+
+
+
+# Select relevant variables for analysis
+variables2 <- c("BMI", "UricAcid", "BloodGlucose", "HDL")
+
+
+# Define outcome variable
+outcome_var2 <- "MetabolicSyndrome"
+
+# Fit logistic regression model
+logit_model2 <- glm(as.formula(paste(outcome_var2, "~", paste(variables2, collapse = " + "))),
+                   data = Metabolic_Syndrome_final,
+                   family = binomial)
+
+# Tidy up the model results
+tidy_results2 <- tidy(logit_model2)
+
+# Print coefficient estimates
+print(tidy_results2)
+
+# Visualize coefficient estimates
+plot(tidy_results2, main = "Coefficient Estimates")
+
+# Check statistical significance of coefficients
+summary(logit_model2)
+
+```
+
+```{r}
+# Get summary of the model
+summary_logit2 <- summary(logit_model2)
+
+# Extract coefficient estimates and p-values
+coefficients2 <- coef(logit_model2)
+p_values2 <- summary_logit2$coefficients2[, 4]
+
+# Exclude intercept (if present)
+if ("(Intercept)" %in% names(coefficients2)) {
+  coefficients2 <- coefficients2[-1]
+  p_values2 <- p_values2[-1]
+}
+
+# Calculate absolute coefficients
+abs_coefficients2 <- abs(coefficients2)
+
+# Find the index of the variable with the highest absolute coefficient
+highest_impact_index2 <- which.max(abs_coefficients2)
+
+# Print the variable with the highest impact and its coefficient
+cat("Variable with the highest impact: ", names(coefficients2)[highest_impact_index2], "\n")
+cat("Coefficient estimate: ", coefficients2[highest_impact_index2], "\n")
+cat("P-value: ", p_values2[highest_impact_index2], "\n")
+```
+
+```{r}
+# Install and load the pROC package
+if (!requireNamespace("pROC", quietly = TRUE)) {
+    install.packages("pROC")
+}
+library(pROC)
+
+# Plot ROC curve and calculate AUC
+roc_response <- roc(response = as.numeric(as.character(Metabolic_Syndrome_final$MetabolicSyndrome)) - 1, 
+                    predictor = fitted(logit_model2))
+plot(roc_response)
+auc(roc_response)
+```
+
+
+
+
+
